@@ -40,21 +40,23 @@ vec2 cx_pow(vec2 v, float p) {
 }
 
 
-vec3 palette(vec2 v, float m) {
+vec3 palette(vec2 v, float p, float z) {
     float l = length(v);
-    if (l > m) l = m;
+    if (l > p) l = p;
 
-    float r = pow(l, 2) / pow(m, 2);
-    float g = -l*(l - m) * 4 / pow(m, 2);
-    float b = -pow(l, 2) / pow(m, 2) + 1;
-    return vec3(r, g, b);
+    if (l > z) {
+        float r = pow(l, 2) / pow(p, 2);
+        float g = -l*(l - p) * 4 / pow(p, 2);
+        float b = -pow(l, 2) / pow(p, 2) + 1;
+        return vec3(r, g, b);
+    }
+    return vec3(1, 0, 1);
 }
 
-vec2 transfer(vec2 s, float a, float b) {
-    vec2 num = s - vec2(a, 0);
-    vec2 denum = cx_pow(s - vec2(a, 0), 2.0) + vec2(pow(b, 2), 0);
-    vec2 f = cx_div(num, denum);
-    return f;
+vec2 transfer(vec2 s, float k) {
+    vec2 num = k*(s + vec2(4, 0));
+    vec2 denom = cx_mul(s, cx_mul((s + vec2(1,0)), cx_mul((s + vec2(5,0)), (s + vec2(6,0))))) + k*(s + vec2(4,0));
+    return cx_div(num, denom);
 }
 
 // Main function
@@ -63,9 +65,11 @@ void main() {
     vec2 mouse_uv = 2.0 * mouse.xy / resolution.xy - 1.0;
     mouse_uv.y *= -1;
 
-    vec2 s = uv * 4;
-    vec2 v = transfer(s, -1, 0.5);
-    vec3 color = palette(v, mod(seconds, 5) + 2);
+    vec2 limits = vec2(6, -1);
+
+    vec2 s = uv * 100;
+    vec2 v = transfer(s, pow(mod(seconds, 30), 5));
+    vec3 color = palette(v, limits.x, limits.y);
 
     if (abs(uv.x) < 0.003) color = vec3(0);
     if (abs(uv.y) < 0.003) color = vec3(0);
